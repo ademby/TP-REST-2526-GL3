@@ -12,4 +12,5 @@ npm install pg
 
 npm run start:dev
 
-http://localhost:3000/seed
+to generate the seed just run this after cd to gestionnaire-cvs:
+npx ts-node src/seed.ts
