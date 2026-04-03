@@ -1,16 +1,16 @@
 # Gestionnaire de CVs - REST API
 
-**Prerequisites:** \* Node.js installed
+**Prerequisites:**
 
+- Node.js installed
 - Docker Desktop installed and running
 
-npm install
+**Setup**
 
-docker compose up -d
+- `npm install`
 
-npm install pg
+- `docker compose up -d`
 
-npm run start:dev
+- `npm run start:dev`
 
-to generate the seed just run this after cd to gestionnaire-cvs:
-npx ts-node src/seed.ts
+- `npm run seed` # this is for seeding
