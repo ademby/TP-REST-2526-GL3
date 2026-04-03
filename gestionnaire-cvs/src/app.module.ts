@@ -4,10 +4,8 @@ import { AppService } from './app.service';
 import { CvModule } from './cv/cv.module';
 import { SkillModule } from './skill/skill.module';
 import { UserModule } from './user/user.module';
-import { User } from './user/entities/user.entity';
-import { Cv } from './cv/entities/cv.entity';
-import { Skill } from './skill/entities/skill.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SeedModule } from './seed/seed.module';
 
 @Module({
   imports: [
@@ -21,10 +19,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       autoLoadEntities: true,
       synchronize: true,
     }),
-    TypeOrmModule.forFeature([User, Cv, Skill]),
     CvModule,
     SkillModule,
     UserModule,
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],
