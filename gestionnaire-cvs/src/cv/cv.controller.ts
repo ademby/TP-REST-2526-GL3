@@ -19,7 +19,12 @@ export class CvController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.cvService.findOne(+id);
+    return this.cvService.findOne(+id).then((cv) => {
+      if (!cv) {
+        return { message: `CV with id ${id} not found` };
+      }
+      return cv;
+    });
   }
 
   @Patch(':id')
