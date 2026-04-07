@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { AuthUser } from '../interfaces/auth-user.interface';
 
 @Injectable()
 export class UserService {
@@ -12,6 +13,7 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
+
   async create(createUserDto: CreateUserDto) {
     const user = this.userRepository.create(createUserDto);
     user.salt = await bcrypt.genSalt();
@@ -24,6 +26,24 @@ export class UserService {
     } catch {
       throw new ConflictException('Username or email already exists');
     }
+  }
+
+  async validateUser(
+    usernameOrEmail: string,
+    password: string,
+  ): Promise<AuthUser | null> {
+    const user = await this.findOneByUsernameOrEmail(usernameOrEmail);
+    if (!user) return null;
+    const hashedPassword = await bcrypt.hash(password, user.salt);
+    if (hashedPassword === user.password) {
+      const cleanUser: AuthUser = {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+      };
+      return cleanUser;
+    }
+    return null;
   }
 
   findAll() {

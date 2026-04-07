@@ -16,3 +16,9 @@
 - `npm run seed` # this is for seeding
 
 - create a `.env` file inside `gestionnaire-cv/` following the `.env.example` file
+
+**Potential Improvements**
+
+- add a Soft-Delete logic
+
+- more security around file uploads

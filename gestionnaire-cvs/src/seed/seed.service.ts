@@ -16,7 +16,8 @@ import {
 } from '@ngneat/falso';
 import { RoleEnum } from '../enums/role.enum';
 import * as bcrypt from 'bcrypt';
-import * as path from 'path';
+// --- deprecated ---
+// import * as path from 'path';
 
 @Injectable()
 export class SeedService {
@@ -28,7 +29,7 @@ export class SeedService {
   ) {}
 
   async seedDatabase() {
-    // Docs says: "@param dropBeforeSync — If set to true then it drops the database with all its tables and data"
+    // Documentation says: "@param dropBeforeSync — If set to true then it drops the database with all its tables and data"
     await this.dataSource.synchronize(true);
 
     const nbOfSkills = 15;
@@ -79,9 +80,10 @@ export class SeedService {
       const randomUser = users[ui];
       const { firstName, lastName } = names[ui];
       const name = randomUser.username + '_seed_' + i;
-      const fileName =
-        [randNumber(), randomUser.username, name].join('_') + '.pdf';
-      const filePath: string = path.join('uploads', fileName);
+      // --- deprecated ---
+      // const fileName =
+      //   [randNumber(), randomUser.username, name].join('_') + '.pdf';
+      // const filePath: string = path.join('uploads', fileName);
 
       const sNb = Math.floor(Math.random() * skills.length);
       const randomSkills: Skill[] = [];
@@ -97,7 +99,8 @@ export class SeedService {
         age: randNumber({ min: 18, max: 60 }),
         cin: randNumber({ min: 10000000, max: 99999999 }).toString(),
         job: randJobTitle(),
-        path: filePath,
+        // --- deprecated ---
+        // path: filePath,
         user: randomUser,
         skills: randomSkills,
       });

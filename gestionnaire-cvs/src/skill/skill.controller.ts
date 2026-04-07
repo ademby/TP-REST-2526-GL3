@@ -1,9 +1,22 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { SkillService } from './skill.service';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
+import { AuthGuard } from '@nestjs/passport/dist/auth.guard';
+import { RoleGuard } from '../auth/role.guard';
+import { RoleEnum } from '../enums/role.enum';
 
 @Controller('skill')
+@UseGuards(AuthGuard('jwt'), RoleGuard(RoleEnum.ADMIN))
 export class SkillController {
   constructor(private readonly skillService: SkillService) {}
 
