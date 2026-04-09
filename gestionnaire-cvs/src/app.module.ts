@@ -6,6 +6,7 @@ import { SkillModule } from './skill/skill.module';
 import { UserModule } from './user/user.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SeedModule } from './seed/seed.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { SeedModule } from './seed/seed.module';
     SkillModule,
     UserModule,
     SeedModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

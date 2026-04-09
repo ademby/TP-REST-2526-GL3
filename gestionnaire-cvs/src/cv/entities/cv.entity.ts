@@ -21,6 +21,9 @@ export class Cv {
   firstname!: string;
 
   @Column()
+  lastname!: string;
+
+  @Column()
   age!: number;
 
   @Column()
@@ -29,8 +32,8 @@ export class Cv {
   @Column()
   job!: string;
 
-  @Column()
-  path!: string;
+  @Column({ nullable: true })
+  path?: string;
 
   // The '*' side of the User relationship: Many CVs belong to One User
   @ManyToOne(() => User, (user) => user.cvs)
