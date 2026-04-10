@@ -40,6 +40,7 @@ async function bootstrap() {
   );
 
   app.useStaticAssets(join(process.cwd(), 'public'), { prefix: '/client' });
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
   const docsAuthMiddleware = (
     request: Request,

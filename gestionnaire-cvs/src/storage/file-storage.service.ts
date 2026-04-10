@@ -10,8 +10,13 @@ export class FileStorageService {
   async saveFile(
     file: Express.Multer.File,
     directory: string,
+    options?: {
+      allowedMimeTypes?: string[];
+      allowedExtensions?: string[];
+      kind?: string;
+    },
   ): Promise<string> {
-    this.validateFile(file);
+    this.validateFile(file, options);
 
     const absoluteDirPath = join(this.uploadsDir, directory);
     await fs.mkdir(absoluteDirPath, { recursive: true });
@@ -25,7 +30,19 @@ export class FileStorageService {
     return join('uploads', directory, fileName).replace(/\\/g, '/');
   }
   async saveCvFile(file: Express.Multer.File): Promise<string> {
-    return await this.saveFile(file, 'cv');
+    return await this.saveFile(file, 'cv', {
+      allowedMimeTypes: ['application/pdf'],
+      allowedExtensions: ['.pdf'],
+      kind: 'PDF',
+    });
+  }
+
+  async saveImageFile(file: Express.Multer.File): Promise<string> {
+    return await this.saveFile(file, 'image', {
+      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+      allowedExtensions: ['.jpg', '.jpeg', '.png', '.webp'],
+      kind: 'image',
+    });
   }
 
   async deleteFileIfExists(relativePath: string): Promise<void> {
@@ -38,13 +55,16 @@ export class FileStorageService {
     }
   }
 
-  private validateFile(file: Express.Multer.File): void {
+  private validateFile(
+    file: Express.Multer.File,
+    options?: {
+      allowedMimeTypes?: string[];
+      allowedExtensions?: string[];
+      kind?: string;
+    },
+  ): void {
     if (!file) {
       throw new BadRequestException('No file uploaded');
-    }
-
-    if ('multipart/form-data' === file.mimetype) {
-      throw new BadRequestException('Unsupported file type');
     }
 
     const extension = extname(file.originalname).toLowerCase();
@@ -53,7 +73,19 @@ export class FileStorageService {
       throw new BadRequestException('File extension is required');
     }
 
-    // lazem we validate `more` this to avoid potential attacks
-    // [list of allowed extensions]
+    const allowedExtensions = options?.allowedExtensions ?? [];
+    if (allowedExtensions.length > 0 && !allowedExtensions.includes(extension)) {
+      throw new BadRequestException(
+        `Unsupported ${options?.kind ?? 'file'} extension`,
+      );
+    }
+
+    const allowedMimeTypes = options?.allowedMimeTypes ?? [];
+    if (
+      allowedMimeTypes.length > 0 &&
+      !allowedMimeTypes.includes(file.mimetype.toLowerCase())
+    ) {
+      throw new BadRequestException(`Unsupported ${options?.kind ?? 'file'} type`);
+    }
   }
 }

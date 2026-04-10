@@ -96,6 +96,45 @@
         overflow: auto;
         max-height: 320px;
       }
+      .cv-preview {
+        margin-top: 16px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        background: #fbfdff;
+      }
+      .cv-header {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+      .cv-photo {
+        width: 84px;
+        height: 84px;
+        border-radius: 12px;
+        object-fit: cover;
+        border: 1px solid var(--border);
+      }
+      .cv-meta {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 8px;
+      }
+      .cv-meta div {
+        background: #f2f6ff;
+        border-radius: 8px;
+        padding: 8px;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .cv-link {
+        display: inline-block;
+        margin-top: 10px;
+        color: var(--accent-2);
+      }
     </style>
   </head>
   <body>
@@ -115,13 +154,14 @@
           <button id="listCvBtn">GET /cv (My CVs)</button>
           <button id="listAllCvBtn" style="display: none">GET /cv/all (Admin)</button>
           <button id="getCvBtn">GET /cv/:id</button>
+          <button id="viewStructuredBtn">View Structured CV</button>
         </div>
         <label for="cvId">CV ID</label>
         <input id="cvId" type="number" placeholder="1" />
       </section>
 
       <section class="card">
-        <h2>Create CV</h2>
+        <h2>Create CV (+ optional image)</h2>
         <label for="name">name</label>
         <input id="name" placeholder="cv-demo" />
         <label for="firstname">firstname</label>
@@ -134,11 +174,13 @@
         <input id="cin" placeholder="12345678" />
         <label for="job">job</label>
         <input id="job" placeholder="Backend Developer" />
-        <button id="createCvBtn">POST /cv</button>
+        <label for="profileImage">Profile image (optional)</label>
+        <input id="profileImage" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+        <button id="createCvBtn">Create CV</button>
       </section>
 
       <section class="card">
-        <h2>Upload CV File</h2>
+        <h2>Upload CV File (PDF)</h2>
         <label for="uploadCvId">CV ID</label>
         <input id="uploadCvId" type="number" placeholder="1" />
         <label for="pdfFile">PDF file</label>
@@ -146,6 +188,13 @@
         <button id="uploadBtn">POST /cv/upload/:id</button>
       </section>
     </div>
+
+    <section class="card" style="margin-top: 16px">
+      <h2>Structured CV View</h2>
+      <div id="cvPreview" class="cv-preview">
+        <span class="muted">No CV selected yet.</span>
+      </div>
+    </section>
 
     <pre id="output">Ready.</pre>
 
@@ -187,6 +236,49 @@
         }
       }
 
+      function escapeHtml(value) {
+        return String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function toPublicFileUrl(relativePath) {
+        if (!relativePath) return null;
+        if (relativePath.startsWith('uploads/')) return `/${relativePath}`;
+        return relativePath;
+      }
+
+      function renderCvCard(cv) {
+        const container = document.getElementById('cvPreview');
+        if (!cv || typeof cv !== 'object' || cv.message) {
+          container.innerHTML = '<span class="muted">CV not found.</span>';
+          return;
+        }
+
+        const imageUrl = toPublicFileUrl(cv.imagePath);
+        const pdfUrl = toPublicFileUrl(cv.path);
+
+        container.innerHTML = `
+          <div class="cv-header">
+            ${imageUrl ? `<img class="cv-photo" src="${escapeHtml(imageUrl)}" alt="Profile image" />` : ''}
+            <div>
+              <h3>${escapeHtml(cv.firstname)} ${escapeHtml(cv.lastname)}</h3>
+              <div class="muted">${escapeHtml(cv.job)}</div>
+            </div>
+          </div>
+          <div class="cv-meta">
+            <div><strong>ID:</strong> ${escapeHtml(cv.id)}</div>
+            <div><strong>Name:</strong> ${escapeHtml(cv.name)}</div>
+            <div><strong>Age:</strong> ${escapeHtml(cv.age)}</div>
+            <div><strong>CIN:</strong> ${escapeHtml(cv.cin)}</div>
+          </div>
+          ${pdfUrl ? `<a class="cv-link" href="${escapeHtml(pdfUrl)}" target="_blank" rel="noreferrer">Open attached CV PDF</a>` : '<div class="muted" style="margin-top: 10px">No PDF attached.</div>'}
+        `;
+      }
+
       async function apiRequest(path, options = {}) {
         const token = getToken();
         if (!token) {
@@ -214,6 +306,14 @@
         return data;
       }
 
+      async function loadCvForStructuredView(id, isAdmin) {
+        if (isAdmin) {
+          const all = await apiRequest('/cv/all');
+          return Array.isArray(all) ? all.find((item) => Number(item.id) === Number(id)) : null;
+        }
+        return await apiRequest(`/cv/${id}`);
+      }
+
       if (!requireLogin()) {
         // redirection already done
       }
@@ -233,7 +333,6 @@
       });
 
       document.getElementById('docsBtn').addEventListener('click', () => {
-        // /docs is protected by JWT token from tp_token cookie.
         window.open('/docs', '_blank', 'noopener,noreferrer');
       });
 
@@ -266,6 +365,19 @@
         }
       });
 
+      document.getElementById('viewStructuredBtn').addEventListener('click', async () => {
+        try {
+          const id = document.getElementById('cvId').value.trim();
+          if (!id) throw new Error('Provide CV id first.');
+          const cv = await loadCvForStructuredView(id, isAdmin);
+          renderCvCard(cv);
+          setOutput(cv || { message: 'CV not found' });
+        } catch (error) {
+          setOutput(error.message || String(error));
+          renderCvCard(null);
+        }
+      });
+
       document.getElementById('createCvBtn').addEventListener('click', async () => {
         try {
           const payload = {
@@ -276,12 +388,32 @@
             cin: document.getElementById('cin').value.trim(),
             job: document.getElementById('job').value.trim(),
           };
-          const data = await apiRequest('/cv', {
+
+          const createdCv = await apiRequest('/cv', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-          setOutput(data);
+
+          let finalCv = createdCv;
+          const imageFile = document.getElementById('profileImage').files[0];
+          if (imageFile && createdCv?.id) {
+            const imageForm = new FormData();
+            imageForm.append('image', imageFile);
+            finalCv = await apiRequest(`/cv/upload-image/${createdCv.id}`, {
+              method: 'POST',
+              body: imageForm,
+            });
+          }
+
+          const createdId = finalCv?.id || createdCv?.id;
+          if (createdId) {
+            document.getElementById('cvId').value = String(createdId);
+            document.getElementById('uploadCvId').value = String(createdId);
+          }
+
+          renderCvCard(finalCv);
+          setOutput(finalCv);
         } catch (error) {
           setOutput(error.message || String(error));
         }
@@ -302,6 +434,7 @@
             body: form,
           });
           setOutput(data);
+          renderCvCard(data);
         } catch (error) {
           setOutput(error.message || String(error));
         }

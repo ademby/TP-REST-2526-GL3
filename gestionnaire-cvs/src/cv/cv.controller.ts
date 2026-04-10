@@ -92,7 +92,21 @@ export class CvController {
     @UploadedFile() file: Express.Multer.File,
     @Request() request: { user: AuthUser },
   ) {
-    console.log(file);
     return this.cvService.uploadCvFile(+id, request.user.id, file);
+  }
+
+  @Post('upload-image/:id')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: { fileSize: 3 * 1024 * 1024 },
+    }),
+  )
+  uploadCvImage(
+    @Param('id') id: string,
+    @UploadedFile() image: Express.Multer.File,
+    @Request() request: { user: AuthUser },
+  ) {
+    return this.cvService.uploadCvImage(+id, request.user.id, image);
   }
 }

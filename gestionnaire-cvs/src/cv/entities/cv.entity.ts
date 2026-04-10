@@ -35,6 +35,9 @@ export class Cv {
   @Column({ nullable: true })
   path?: string;
 
+  @Column({ nullable: true })
+  imagePath?: string;
+
   // The '*' side of the User relationship: Many CVs belong to One User
   @ManyToOne(() => User, (user) => user.cvs)
   user!: User;

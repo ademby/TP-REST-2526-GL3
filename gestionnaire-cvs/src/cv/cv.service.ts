@@ -81,4 +81,24 @@ export class CvService {
 
     return savedCv;
   }
+
+  async uploadCvImage(id: number, userId: number, image: Express.Multer.File) {
+    const existingCv = await this.findOne(id, userId);
+
+    if (!existingCv) {
+      throw new NotFoundException(`CV not found`);
+    }
+
+    const oldImagePath = existingCv.imagePath;
+    const newImagePath = await this.fileStorageService.saveImageFile(image);
+
+    existingCv.imagePath = newImagePath;
+    const savedCv = await this.cvRepository.save(existingCv);
+
+    if (oldImagePath && oldImagePath !== newImagePath) {
+      await this.fileStorageService.deleteFileIfExists(oldImagePath);
+    }
+
+    return savedCv;
+  }
 }
