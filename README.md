@@ -11,11 +11,11 @@
 
 - `docker compose up -d`
 
-- `npm run start:dev`
-
 - `npm run seed` # this is for seeding
 
 - create a `.env` file inside `gestionnaire-cv/` following the `.env.example` file
+
+- `npm run start:dev`
 
 **Potential Improvements**
 
