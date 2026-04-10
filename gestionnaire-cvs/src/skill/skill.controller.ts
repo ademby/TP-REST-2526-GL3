@@ -14,9 +14,12 @@ import { UpdateSkillDto } from './dto/update-skill.dto';
 import { AuthGuard } from '@nestjs/passport/dist/auth.guard';
 import { RoleGuard } from '../auth/role.guard';
 import { RoleEnum } from '../enums/role.enum';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @Controller('skill')
 @UseGuards(AuthGuard('jwt'), RoleGuard(RoleEnum.ADMIN))
+@ApiTags('skill')
+@ApiBearerAuth()
 export class SkillController {
   constructor(private readonly skillService: SkillService) {}
 

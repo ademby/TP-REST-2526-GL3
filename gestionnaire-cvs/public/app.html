@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Client - CV Manager</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --text: #16233a;
+        --muted: #5b6883;
+        --accent: #1463ff;
+        --accent-2: #0e4fd4;
+        --border: #d9e0ef;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 24px;
+        background: linear-gradient(180deg, #f7f9ff, #eef3ff);
+        color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      h1 {
+        margin: 0;
+      }
+      .header-actions {
+        display: flex;
+        gap: 8px;
+      }
+      button {
+        padding: 10px 14px;
+        border: none;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+      }
+      button:hover {
+        background: var(--accent-2);
+      }
+      .danger {
+        background: #d6324b;
+      }
+      .danger:hover {
+        background: #bc2940;
+      }
+      p {
+        margin: 0 0 16px;
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+      }
+      label {
+        display: block;
+        margin: 8px 0 4px;
+        font-size: 14px;
+      }
+      input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccd6ea;
+        border-radius: 8px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      pre {
+        margin-top: 16px;
+        background: #111a2c;
+        color: #d4e2ff;
+        border-radius: 10px;
+        padding: 12px;
+        overflow: auto;
+        max-height: 320px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>CV Manager Client</h1>
+      <div class="header-actions">
+        <button id="docsBtn">Open Swagger (/docs)</button>
+        <button id="logoutBtn" class="danger">Logout</button>
+      </div>
+    </header>
+    <p>Accès autorisé. Les actions API sont disponibles seulement après login.</p>
+
+    <div class="grid">
+      <section class="card">
+        <h2>CV Actions</h2>
+        <div class="row">
+          <button id="listCvBtn">GET /cv</button>
+          <button id="getCvBtn">GET /cv/:id</button>
+        </div>
+        <label for="cvId">CV ID</label>
+        <input id="cvId" type="number" placeholder="1" />
+      </section>
+
+      <section class="card">
+        <h2>Create CV</h2>
+        <label for="name">name</label>
+        <input id="name" placeholder="cv-demo" />
+        <label for="firstname">firstname</label>
+        <input id="firstname" placeholder="Med" />
+        <label for="lastname">lastname</label>
+        <input id="lastname" placeholder="Test" />
+        <label for="age">age</label>
+        <input id="age" type="number" placeholder="23" />
+        <label for="cin">cin</label>
+        <input id="cin" placeholder="12345678" />
+        <label for="job">job</label>
+        <input id="job" placeholder="Backend Developer" />
+        <button id="createCvBtn">POST /cv</button>
+      </section>
+
+      <section class="card">
+        <h2>Upload CV File</h2>
+        <label for="uploadCvId">CV ID</label>
+        <input id="uploadCvId" type="number" placeholder="1" />
+        <label for="pdfFile">PDF file</label>
+        <input id="pdfFile" type="file" accept=".pdf,application/pdf" />
+        <button id="uploadBtn">POST /cv/upload/:id</button>
+      </section>
+    </div>
+
+    <pre id="output">Ready.</pre>
+
+    <script>
+      function getToken() {
+        return localStorage.getItem('tp_token') || '';
+      }
+
+      function clearSession() {
+        localStorage.removeItem('tp_token');
+        document.cookie =
+          'tp_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+      }
+
+      function requireLogin() {
+        if (!getToken()) {
+          window.location.replace('/client/login.html');
+          return false;
+        }
+        return true;
+      }
+
+      const output = document.getElementById('output');
+      function setOutput(data) {
+        output.textContent =
+          typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+      }
+
+      async function apiRequest(path, options = {}) {
+        const token = getToken();
+        if (!token) {
+          clearSession();
+          window.location.replace('/client/login.html');
+          throw new Error('Missing token. Please login.');
+        }
+
+        const headers = { ...(options.headers || {}), Authorization: `Bearer ${token}` };
+        const response = await fetch(path, { ...options, headers });
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = text;
+        }
+        if (!response.ok) {
+          if (response.status === 401) {
+            clearSession();
+            window.location.replace('/client/login.html');
+          }
+          throw new Error(`HTTP ${response.status}\n${JSON.stringify(data, null, 2)}`);
+        }
+        return data;
+      }
+
+      if (!requireLogin()) {
+        // redirection already done
+      }
+
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        clearSession();
+        window.location.replace('/client/login.html');
+      });
+
+      document.getElementById('docsBtn').addEventListener('click', () => {
+        // /docs is protected by JWT token from tp_token cookie.
+        window.open('/docs', '_blank', 'noopener,noreferrer');
+      });
+
+      document.getElementById('listCvBtn').addEventListener('click', async () => {
+        try {
+          const data = await apiRequest('/cv');
+          setOutput(data);
+        } catch (error) {
+          setOutput(error.message || String(error));
+        }
+      });
+
+      document.getElementById('getCvBtn').addEventListener('click', async () => {
+        try {
+          const id = document.getElementById('cvId').value.trim();
+          if (!id) throw new Error('Provide CV id first.');
+          const data = await apiRequest(`/cv/${id}`);
+          setOutput(data);
+        } catch (error) {
+          setOutput(error.message || String(error));
+        }
+      });
+
+      document.getElementById('createCvBtn').addEventListener('click', async () => {
+        try {
+          const payload = {
+            name: document.getElementById('name').value.trim(),
+            firstname: document.getElementById('firstname').value.trim(),
+            lastname: document.getElementById('lastname').value.trim(),
+            age: Number(document.getElementById('age').value),
+            cin: document.getElementById('cin').value.trim(),
+            job: document.getElementById('job').value.trim(),
+          };
+          const data = await apiRequest('/cv', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          setOutput(data);
+        } catch (error) {
+          setOutput(error.message || String(error));
+        }
+      });
+
+      document.getElementById('uploadBtn').addEventListener('click', async () => {
+        try {
+          const id = document.getElementById('uploadCvId').value.trim();
+          const file = document.getElementById('pdfFile').files[0];
+          if (!id) throw new Error('Provide CV id for upload.');
+          if (!file) throw new Error('Select a PDF file first.');
+
+          const form = new FormData();
+          form.append('file', file);
+
+          const data = await apiRequest(`/cv/upload/${id}`, {
+            method: 'POST',
+            body: form,
+          });
+          setOutput(data);
+        } catch (error) {
+          setOutput(error.message || String(error));
+        }
+      });
+    </script>
+  </body>
+</html>

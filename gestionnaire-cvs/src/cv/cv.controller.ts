@@ -18,9 +18,12 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthUser } from '../interfaces/auth-user.interface';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @Controller('cv')
 @UseGuards(AuthGuard('jwt'))
+@ApiTags('cv')
+@ApiBearerAuth()
 export class CvController {
   constructor(private readonly cvService: CvService) {}
 
