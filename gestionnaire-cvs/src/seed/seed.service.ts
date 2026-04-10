@@ -90,7 +90,7 @@ export class SeedService {
         }),
         password: await bcrypt.hash(password, salt),
         salt: salt,
-        role: randNumber() % 2 === 0 ? RoleEnum.ADMIN : RoleEnum.USER,
+        role: randNumber() % 3 === 0 ? RoleEnum.ADMIN : RoleEnum.USER,
       });
 
       console.log(
