@@ -6,6 +6,7 @@ import { join } from 'path';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NextFunction, Request, Response } from 'express';
 import { verify } from 'jsonwebtoken';
+import { RoleEnum } from './enums/role.enum';
 
 function extractBearerToken(request: Request): string | null {
   const authHeader = request.headers.authorization;
@@ -57,7 +58,13 @@ async function bootstrap() {
     }
 
     try {
-      verify(token, secret);
+      const decoded = verify(token, secret) as { role?: string };
+      if (decoded?.role !== RoleEnum.ADMIN) {
+        response.status(403).json({
+          message: 'Forbidden. Admin access is required for Swagger docs.',
+        });
+        return;
+      }
       next();
     } catch {
       response.status(401).json({ message: 'Unauthorized. Invalid token.' });
