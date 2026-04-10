@@ -14,6 +14,7 @@ export class FileStorageService {
       allowedMimeTypes?: string[];
       allowedExtensions?: string[];
       kind?: string;
+      signatureType?: 'pdf' | 'image';
     },
   ): Promise<string> {
     this.validateFile(file, options);
@@ -34,6 +35,7 @@ export class FileStorageService {
       allowedMimeTypes: ['application/pdf'],
       allowedExtensions: ['.pdf'],
       kind: 'PDF',
+      signatureType: 'pdf',
     });
   }
 
@@ -42,6 +44,7 @@ export class FileStorageService {
       allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
       allowedExtensions: ['.jpg', '.jpeg', '.png', '.webp'],
       kind: 'image',
+      signatureType: 'image',
     });
   }
 
@@ -61,10 +64,14 @@ export class FileStorageService {
       allowedMimeTypes?: string[];
       allowedExtensions?: string[];
       kind?: string;
+      signatureType?: 'pdf' | 'image';
     },
   ): void {
     if (!file) {
       throw new BadRequestException('No file uploaded');
+    }
+    if (!file.buffer || file.buffer.length === 0) {
+      throw new BadRequestException('File content is empty');
     }
 
     const extension = extname(file.originalname).toLowerCase();
@@ -87,5 +94,52 @@ export class FileStorageService {
     ) {
       throw new BadRequestException(`Unsupported ${options?.kind ?? 'file'} type`);
     }
+
+    if (options?.signatureType === 'pdf' && !this.hasPdfSignature(file.buffer)) {
+      throw new BadRequestException('Invalid PDF file content');
+    }
+
+    if (
+      options?.signatureType === 'image' &&
+      !this.hasImageSignature(file.buffer)
+    ) {
+      throw new BadRequestException('Invalid image file content');
+    }
+  }
+
+  private hasPdfSignature(buffer: Buffer): boolean {
+    if (buffer.length < 5) return false;
+    return buffer.subarray(0, 5).toString('ascii') === '%PDF-';
+  }
+
+  private hasImageSignature(buffer: Buffer): boolean {
+    return (
+      this.hasPngSignature(buffer) ||
+      this.hasJpegSignature(buffer) ||
+      this.hasWebpSignature(buffer)
+    );
+  }
+
+  private hasPngSignature(buffer: Buffer): boolean {
+    if (buffer.length < 8) return false;
+    const pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    return pngSignature.every((byte, index) => buffer[index] === byte);
+  }
+
+  private hasJpegSignature(buffer: Buffer): boolean {
+    if (buffer.length < 3) return false;
+    return (
+      buffer[0] === 0xff &&
+      buffer[1] === 0xd8 &&
+      buffer[2] === 0xff
+    );
+  }
+
+  private hasWebpSignature(buffer: Buffer): boolean {
+    if (buffer.length < 12) return false;
+    return (
+      buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
+      buffer.subarray(8, 12).toString('ascii') === 'WEBP'
+    );
   }
 }
