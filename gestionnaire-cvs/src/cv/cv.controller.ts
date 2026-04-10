@@ -19,6 +19,8 @@ import { AuthUser } from '../interfaces/auth-user.interface';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { RoleGuard } from '../auth/role.guard';
+import { RoleEnum } from '../enums/role.enum';
 
 @Controller('cv')
 @UseGuards(AuthGuard('jwt'))
@@ -38,6 +40,12 @@ export class CvController {
   @Get()
   findAll(@Request() request: { user: AuthUser }) {
     return this.cvService.findAll(request.user.id);
+  }
+
+  @Get('all')
+  @UseGuards(RoleGuard(RoleEnum.ADMIN))
+  findAllForAdmin() {
+    return this.cvService.findAllForAdmin();
   }
 
   @Get(':id')

@@ -106,13 +106,14 @@
         <button id="logoutBtn" class="danger">Logout</button>
       </div>
     </header>
-    <p>Accès autorisé. Les actions API sont disponibles seulement après login.</p>
+    <p>Access authorized. API actions are available only after login.</p>
 
     <div class="grid">
       <section class="card">
         <h2>CV Actions</h2>
         <div class="row">
-          <button id="listCvBtn">GET /cv</button>
+          <button id="listCvBtn">GET /cv (My CVs)</button>
+          <button id="listAllCvBtn" style="display: none">GET /cv/all (Admin)</button>
           <button id="getCvBtn">GET /cv/:id</button>
         </div>
         <label for="cvId">CV ID</label>
@@ -173,6 +174,19 @@
           typeof data === 'string' ? data : JSON.stringify(data, null, 2);
       }
 
+      function readRoleFromToken(token) {
+        try {
+          const parts = token.split('.');
+          if (parts.length < 2) return null;
+          const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          const payloadText = atob(payloadBase64);
+          const payload = JSON.parse(payloadText);
+          return typeof payload.role === 'string' ? payload.role : null;
+        } catch {
+          return null;
+        }
+      }
+
       async function apiRequest(path, options = {}) {
         const token = getToken();
         if (!token) {
@@ -204,6 +218,15 @@
         // redirection already done
       }
 
+      const role = readRoleFromToken(getToken());
+      const isAdmin = role === 'admin';
+      if (isAdmin) {
+        document.getElementById('listAllCvBtn').style.display = 'inline-block';
+      }
+      if (!isAdmin) {
+        document.getElementById('docsBtn').style.display = 'none';
+      }
+
       document.getElementById('logoutBtn').addEventListener('click', () => {
         clearSession();
         window.location.replace('/client/login.html');
@@ -217,6 +240,15 @@
       document.getElementById('listCvBtn').addEventListener('click', async () => {
         try {
           const data = await apiRequest('/cv');
+          setOutput(data);
+        } catch (error) {
+          setOutput(error.message || String(error));
+        }
+      });
+
+      document.getElementById('listAllCvBtn').addEventListener('click', async () => {
+        try {
+          const data = await apiRequest('/cv/all');
           setOutput(data);
         } catch (error) {
           setOutput(error.message || String(error));

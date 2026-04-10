@@ -30,6 +30,10 @@ export class CvService {
     });
   }
 
+  async findAllForAdmin() {
+    return await this.cvRepository.find();
+  }
+
   findOne(id: number, userId: number) {
     return this.cvRepository.findOne({
       where: { id, user: { id: userId } },
