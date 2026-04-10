@@ -24,6 +24,10 @@ export class CvService {
     return this.cvRepository.save(cv);
   }
 
+  async findAllForAdmin() {
+    return await this.cvRepository.find();
+  }
+
   async findAll(userId: number) {
     return await this.cvRepository.find({
       where: { user: { id: userId } },
