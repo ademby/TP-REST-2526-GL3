@@ -1,4 +1,12 @@
-import { IsInt, IsNotEmpty, IsString, Min } from 'class-validator';
+import {
+  ArrayUnique,
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateCvDto {
   @IsString()
@@ -24,4 +32,11 @@ export class CreateCvDto {
   @IsString()
   @IsNotEmpty()
   job!: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  skills?: number[];
 }

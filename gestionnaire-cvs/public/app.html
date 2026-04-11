@@ -135,6 +135,35 @@
         margin-top: 10px;
         color: var(--accent-2);
       }
+      .skill-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 6px;
+      }
+      .skill-option {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: #f7faff;
+        font-size: 13px;
+      }
+      .skill-option input {
+        width: auto;
+        margin: 0;
+        padding: 0;
+      }
+      .skill-tag {
+        display: inline-block;
+        margin: 4px 6px 0 0;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #e8efff;
+        font-size: 12px;
+      }
     </style>
   </head>
   <body>
@@ -174,6 +203,10 @@
         <input id="cin" placeholder="12345678" />
         <label for="job">job</label>
         <input id="job" placeholder="Backend Developer" />
+        <label>skills</label>
+        <div id="skillsContainer" class="skill-list">
+          <span class="muted">Loading skills...</span>
+        </div>
         <label for="profileImage">Profile image (optional)</label>
         <input id="profileImage" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
         <button id="createCvBtn">Create CV</button>
@@ -260,6 +293,16 @@
 
         const imageUrl = toPublicFileUrl(cv.imagePath);
         const pdfUrl = toPublicFileUrl(cv.path);
+        const skills = Array.isArray(cv.skills) ? cv.skills : [];
+        const skillsHtml =
+          skills.length > 0
+            ? skills
+                .map(
+                  (skill) =>
+                    `<span class="skill-tag">${escapeHtml(skill.designation || `Skill #${skill.id}`)}</span>`,
+                )
+                .join('')
+            : '<span class="muted">No skills assigned.</span>';
 
         container.innerHTML = `
           <div class="cv-header">
@@ -275,8 +318,35 @@
             <div><strong>Age:</strong> ${escapeHtml(cv.age)}</div>
             <div><strong>CIN:</strong> ${escapeHtml(cv.cin)}</div>
           </div>
+          <div style="margin-top: 10px"><strong>Skills:</strong><div>${skillsHtml}</div></div>
           ${pdfUrl ? `<a class="cv-link" href="${escapeHtml(pdfUrl)}" target="_blank" rel="noreferrer">Open attached CV PDF</a>` : '<div class="muted" style="margin-top: 10px">No PDF attached.</div>'}
         `;
+      }
+
+      function renderSkillsSelector(skills) {
+        const container = document.getElementById('skillsContainer');
+        if (!Array.isArray(skills) || skills.length === 0) {
+          container.innerHTML = '<span class="muted">No skills available.</span>';
+          return;
+        }
+
+        container.innerHTML = skills
+          .map(
+            (skill) => `
+              <label class="skill-option">
+                <input type="checkbox" class="skill-checkbox" value="${escapeHtml(skill.id)}" />
+                <span>${escapeHtml(skill.designation)}</span>
+              </label>
+            `,
+          )
+          .join('');
+      }
+
+      function getSelectedSkillIds() {
+        const selected = Array.from(document.querySelectorAll('.skill-checkbox:checked'));
+        return selected
+          .map((checkbox) => Number(checkbox.value))
+          .filter((value) => Number.isInteger(value) && value > 0);
       }
 
       async function apiRequest(path, options = {}) {
@@ -306,6 +376,17 @@
         return data;
       }
 
+      async function loadSkillsForForm() {
+        try {
+          const skills = await apiRequest('/skill');
+          renderSkillsSelector(skills);
+        } catch (error) {
+          document.getElementById('skillsContainer').innerHTML =
+            '<span class="muted">Failed to load skills.</span>';
+          setOutput(error.message || String(error));
+        }
+      }
+
       async function loadCvForStructuredView(id, isAdmin) {
         if (isAdmin) {
           const all = await apiRequest('/cv/all');
@@ -326,6 +407,8 @@
       if (!isAdmin) {
         document.getElementById('docsBtn').style.display = 'none';
       }
+
+      loadSkillsForForm();
 
       document.getElementById('logoutBtn').addEventListener('click', () => {
         clearSession();
@@ -387,6 +470,7 @@
             age: Number(document.getElementById('age').value),
             cin: document.getElementById('cin').value.trim(),
             job: document.getElementById('job').value.trim(),
+            skills: getSelectedSkillIds(),
           };
 
           const createdCv = await apiRequest('/cv', {

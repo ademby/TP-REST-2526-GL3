@@ -1,42 +1,53 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCvDto } from './dto/create-cv.dto';
 import { UpdateCvDto } from './dto/update-cv.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cv } from './entities/cv.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
 import { FileStorageService } from '../storage/file-storage.service';
+import { Skill } from '../skill/entities/skill.entity';
 
 @Injectable()
 export class CvService {
   constructor(
     @InjectRepository(Cv)
     private readonly cvRepository: Repository<Cv>,
+    @InjectRepository(Skill)
+    private readonly skillRepository: Repository<Skill>,
     private readonly fileStorageService: FileStorageService,
   ) {}
 
-  create(createCvDto: CreateCvDto, userId: number) {
+  async create(createCvDto: CreateCvDto, userId: number) {
+    const { skills: skillIds, ...cvData } = createCvDto;
+    const resolvedSkills = await this.resolveSkills(skillIds);
+
     const cv = this.cvRepository.create({
-      ...createCvDto,
+      ...cvData,
       user: { id: userId } as User,
+      skills: resolvedSkills ?? [],
     });
 
-    return this.cvRepository.save(cv);
+    return await this.cvRepository.save(cv);
   }
 
   async findAll(userId: number) {
     return await this.cvRepository.find({
       where: { user: { id: userId } },
+      relations: ['skills'],
     });
   }
 
   async findAllForAdmin() {
-    return await this.cvRepository.find();
+    return await this.cvRepository.find({
+      relations: ['skills', 'user'],
+    });
   }
 
   findOne(id: number, userId: number) {
     return this.cvRepository.findOne({
       where: { id, user: { id: userId } },
+      relations: ['skills'],
     });
   }
 
@@ -47,7 +58,11 @@ export class CvService {
       throw new NotFoundException(`CV not found`);
     }
 
-    const updatedCv = this.cvRepository.merge(existingCv, updateCvDto);
+    const { skills: skillIds, ...partialData } = updateCvDto;
+    const updatedCv = this.cvRepository.merge(existingCv, partialData);
+    if (skillIds !== undefined) {
+      updatedCv.skills = (await this.resolveSkills(skillIds)) ?? [];
+    }
     return this.cvRepository.save(updatedCv);
   }
 
@@ -100,5 +115,21 @@ export class CvService {
     }
 
     return savedCv;
+  }
+
+  private async resolveSkills(skillIds?: number[]): Promise<Skill[] | undefined> {
+    if (skillIds === undefined) return undefined;
+    if (skillIds.length === 0) return [];
+
+    const uniqueSkillIds = Array.from(new Set(skillIds));
+    const skills = await this.skillRepository.find({
+      where: { id: In(uniqueSkillIds) },
+    });
+
+    if (skills.length !== uniqueSkillIds.length) {
+      throw new BadRequestException('One or more skills are invalid');
+    }
+
+    return skills;
   }
 }

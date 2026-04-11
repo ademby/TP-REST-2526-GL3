@@ -17,13 +17,14 @@ import { RoleEnum } from '../enums/role.enum';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @Controller('skill')
-@UseGuards(AuthGuard('jwt'), RoleGuard(RoleEnum.ADMIN))
+@UseGuards(AuthGuard('jwt'))
 @ApiTags('skill')
 @ApiBearerAuth()
 export class SkillController {
   constructor(private readonly skillService: SkillService) {}
 
   @Post()
+  @UseGuards(RoleGuard(RoleEnum.ADMIN))
   create(@Body() createSkillDto: CreateSkillDto) {
     return this.skillService.create(createSkillDto);
   }
@@ -39,11 +40,13 @@ export class SkillController {
   }
 
   @Patch(':id')
+  @UseGuards(RoleGuard(RoleEnum.ADMIN))
   update(@Param('id') id: string, @Body() updateSkillDto: UpdateSkillDto) {
     return this.skillService.update(+id, updateSkillDto);
   }
 
   @Delete(':id')
+  @UseGuards(RoleGuard(RoleEnum.ADMIN))
   remove(@Param('id') id: string) {
     return this.skillService.remove(+id);
   }
