@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Length,
   Min,
 } from 'class-validator';
 
@@ -27,6 +28,7 @@ export class CreateCvDto {
 
   @IsString()
   @IsNotEmpty()
+  @Length(8, 8)
   cin!: string;
 
   @IsString()

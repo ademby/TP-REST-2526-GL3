@@ -1,8 +1,0 @@
-- Short Term Objectives :
-
-use guards : use a generic role-based guard class
-
-questions :
-when moving images, is the javascript optimized for passing big object from function to function
-soft delete
-test the upload pdf service
