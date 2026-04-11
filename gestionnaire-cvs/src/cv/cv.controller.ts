@@ -39,9 +39,6 @@ export class CvController {
 
   @Get()
   findAll(@Request() request: { user: AuthUser }) {
-    if (request.user.role === 'admin') {
-      return this.cvService.findAllForAdmin();
-    }
     return this.cvService.findAll(request.user.id);
   }
 
