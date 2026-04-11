@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { promises as fs } from 'fs';
-import { randomUUID } from 'crypto';
+import { promises as fs } from 'fs';//donne-moi la version moderne de fs basée sur les Promises
+import { randomUUID } from 'crypto';//avoid file name collision
 import { extname, join } from 'path';
 
 @Injectable()
